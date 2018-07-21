@@ -3,13 +3,25 @@
 
 [[projects]]
   name = "github.com/bnkamalesh/webgo"
-  packages = ["."]
+  packages = [".","middleware"]
   revision = "2134dfb4a66ef62d034111822f1a4880f18278de"
   version = "v2.2.3"
+
+[[projects]]
+  branch = "master"
+  name = "github.com/globalsign/mgo"
+  packages = [".","bson","internal/json","internal/sasl","internal/scram"]
+  revision = "113d3961e7311526535a1ef7042196563d442761"
+
+[[projects]]
+  name = "github.com/google/uuid"
+  packages = ["."]
+  revision = "064e2069ce9c359c118179501254f67d7d37ba24"
+  version = "0.2"
 
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "dfc25a4d25d35f3d809176efc80203ddc96885d4e4060ae6ff79b0f46291c48a"
+  inputs-digest = "10f347692c70e19075984a9158dc7dac2a88a358a8e703fa517bfd3e6063e370"
   solver-name = "gps-cdcl"
   solver-version = 1
