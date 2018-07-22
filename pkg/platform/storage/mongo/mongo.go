@@ -13,6 +13,8 @@ var (
 	randomValue = uuid.New().String()
 	randomKey   = uuid.New().String()
 	randomQuery = bson.M{randomKey: randomValue}
+	// ErrNotFound is returned when the document was not found in Mongo collection
+	ErrNotFound = errors.New("Document not found")
 )
 
 // Config holds the config required for MongoDB
@@ -118,6 +120,9 @@ func (ms *Handler) FindOne(collectionName, id string, result interface{}) (map[s
 
 	out := make(map[string]interface{}, 0)
 	err := collection.FindId(objID).One(&out)
+	if err == mgo.ErrNotFound {
+		return nil, ErrNotFound
+	}
 	return out, err
 }
 

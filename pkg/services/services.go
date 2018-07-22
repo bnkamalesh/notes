@@ -2,9 +2,9 @@
 package services
 
 import (
-	"github.com/bnkamalesh/gonotes/pkg/items"
-	"github.com/bnkamalesh/gonotes/pkg/platform/logger"
-	"github.com/bnkamalesh/gonotes/pkg/platform/storage"
+	"github.com/bnkamalesh/notes/pkg/items"
+	"github.com/bnkamalesh/notes/pkg/platform/logger"
+	"github.com/bnkamalesh/notes/pkg/platform/storage"
 )
 
 // Handler holds all the services of the app

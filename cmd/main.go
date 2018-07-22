@@ -4,11 +4,11 @@ import (
 	"github.com/bnkamalesh/webgo"
 	"github.com/bnkamalesh/webgo/middleware"
 
-	"github.com/bnkamalesh/gonotes/api"
-	"github.com/bnkamalesh/gonotes/configs"
-	"github.com/bnkamalesh/gonotes/pkg/platform/logger"
-	"github.com/bnkamalesh/gonotes/pkg/platform/storage"
-	"github.com/bnkamalesh/gonotes/pkg/services"
+	"github.com/bnkamalesh/notes/api"
+	"github.com/bnkamalesh/notes/configs"
+	"github.com/bnkamalesh/notes/pkg/platform/logger"
+	"github.com/bnkamalesh/notes/pkg/platform/storage"
+	"github.com/bnkamalesh/notes/pkg/services"
 )
 
 func main() {

@@ -1,8 +1,8 @@
 package items
 
 import (
-	"github.com/bnkamalesh/gonotes/pkg/platform/logger"
-	"github.com/bnkamalesh/gonotes/pkg/platform/storage"
+	"github.com/bnkamalesh/notes/pkg/platform/logger"
+	"github.com/bnkamalesh/notes/pkg/platform/storage"
 )
 
 // Service holds all the dependencies of items

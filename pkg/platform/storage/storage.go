@@ -2,9 +2,15 @@
 package storage
 
 import (
+	"errors"
 	"time"
 
-	"github.com/bnkamalesh/gonotes/pkg/platform/storage/mongo"
+	"github.com/bnkamalesh/notes/pkg/platform/storage/mongo"
+)
+
+var (
+	// ErrNotFound is returned if the record was not found in the storage
+	ErrNotFound = errors.New("Record not found")
 )
 
 // Service defines all the methods implemented by the store
@@ -78,13 +84,20 @@ func (s *Store) Save(bucket string, data interface{}) (*DocMeta, error) {
 
 // FindOne finds a single record based on the provided ID
 func (s *Store) FindOne(bucket, id string, result interface{}) (map[string]interface{}, error) {
-	return s.handler.FindOne(bucket, id, result)
+	out, err := s.handler.FindOne(bucket, id, result)
+	if err == mongo.ErrNotFound {
+		return nil, ErrNotFound
+	}
+	return out, err
 }
 
 // UpdateOne updates a record with the given ID and new data
 func (s *Store) UpdateOne(bucket, id string, data interface{}) (*DocMeta, error) {
 	err := s.handler.UpdateOne(bucket, id, data)
 	if err != nil {
+		if err == mongo.ErrNotFound {
+			return nil, ErrNotFound
+		}
 		return nil, err
 	}
 	return &DocMeta{ID: id, Count: 1}, nil
@@ -94,6 +107,9 @@ func (s *Store) UpdateOne(bucket, id string, data interface{}) (*DocMeta, error)
 func (s *Store) DeleteOne(bucket, id string) (*DocMeta, error) {
 	err := s.handler.DeleteOne(bucket, id)
 	if err != nil {
+		if err == mongo.ErrNotFound {
+			return nil, ErrNotFound
+		}
 		return nil, err
 	}
 	return &DocMeta{ID: id, Count: 1}, nil

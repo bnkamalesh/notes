@@ -6,7 +6,7 @@ import (
 
 	"github.com/bnkamalesh/webgo"
 
-	"github.com/bnkamalesh/gonotes/pkg/platform/storage"
+	"github.com/bnkamalesh/notes/pkg/platform/storage"
 )
 
 // Webgo returns the configurations required for webgo

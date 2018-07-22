@@ -1,7 +1,7 @@
 // Package api serves all the API endpoints of the app
 package api
 
-import "github.com/bnkamalesh/gonotes/pkg/services"
+import "github.com/bnkamalesh/notes/pkg/services"
 
 // Handler holds all the services which will serve the endpoints
 type Handler struct {

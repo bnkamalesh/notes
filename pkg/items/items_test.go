@@ -3,13 +3,13 @@ package items
 import (
 	"testing"
 
-	"github.com/bnkamalesh/gonotes/pkg/platform/logger"
-	"github.com/bnkamalesh/gonotes/pkg/platform/storage"
+	"github.com/bnkamalesh/notes/pkg/platform/logger"
+	"github.com/bnkamalesh/notes/pkg/platform/storage"
 )
 
 func service() (*Service, error) {
 	store, err := storage.New(storage.Config{
-		Name:  "gonotes",
+		Name:  "gonotes_test",
 		Hosts: []string{"127.0.0.1:27017"},
 	})
 	if err != nil {
@@ -20,7 +20,7 @@ func service() (*Service, error) {
 	return &service, nil
 }
 
-func TestCRUD(t *testing.T) {
+func TestCreate(t *testing.T) {
 	s, err := service()
 	if err != nil {
 		t.Fatal(err.Error())
@@ -50,8 +50,27 @@ func TestCRUD(t *testing.T) {
 	if item.OwnerID != payload["ownerID"] {
 		t.Fatalf("Invalid OwnerID, got '%s' expected '%s'", item.OwnerID, payload["ownerID"])
 	}
+	_, err = s.Delete(item.ID)
+	if err != nil {
+		t.Fatal(err.Error())
+	}
+}
 
-	// Test read
+func TestRead(t *testing.T) {
+	s, err := service()
+	if err != nil {
+		t.Fatal(err.Error())
+	}
+	payload := map[string]string{
+		"title":       "Hello world",
+		"description": "Hello world description",
+		"ownerID":     "testOwner",
+	}
+	item, err := s.Create(payload)
+	if err != nil {
+		t.Fatal(err.Error())
+	}
+
 	itemFromDB, err := s.Read(item.ID)
 	if err != nil {
 		t.Fatal(err.Error())
@@ -59,6 +78,31 @@ func TestCRUD(t *testing.T) {
 
 	if itemFromDB.ID != item.ID {
 		t.Fatalf("Invalid ID, got '%s' expected '%s'", itemFromDB.ID, item.ID)
+	}
+	_, err = s.Delete(itemFromDB.ID)
+	if err != nil {
+		t.Fatal(err.Error())
+	}
+}
+
+func TestUpdate(t *testing.T) {
+	s, err := service()
+	if err != nil {
+		t.Fatal(err.Error())
+	}
+	payload := map[string]string{
+		"title":       "Hello world",
+		"description": "Hello world description",
+		"ownerID":     "testOwner",
+	}
+	item, err := s.Create(payload)
+	if err != nil {
+		t.Fatal(err.Error())
+	}
+
+	itemFromDB, err := s.Read(item.ID)
+	if err != nil {
+		t.Fatal(err.Error())
 	}
 
 	// Test update
@@ -75,14 +119,38 @@ func TestCRUD(t *testing.T) {
 	if updatedItem.Title != updateTitle {
 		t.Fatalf("Invalid title, got '%s' expected '%s'", updatedItem.Title, updateTitle)
 	}
+	_, err = s.Delete(itemFromDB.ID)
+	if err != nil {
+		t.Fatal(err.Error())
+	}
+}
 
-	// Test delete
-	deletedItem, err := s.Delete(updatedItem.ID)
+func TestDelete(t *testing.T) {
+	s, err := service()
+	if err != nil {
+		t.Fatal(err.Error())
+	}
+	payload := map[string]string{
+		"title":       "Hello world",
+		"description": "Hello world description",
+		"ownerID":     "testOwner",
+	}
+	item, err := s.Create(payload)
 	if err != nil {
 		t.Fatal(err.Error())
 	}
 
-	if deletedItem.ID != updatedItem.ID {
-		t.Fatalf("Invalid ID, got '%s' expected '%s'", deletedItem.ID, updatedItem.ID)
+	itemFromDB, err := s.Read(item.ID)
+	if err != nil {
+		t.Fatal(err.Error())
+	}
+
+	deletedItem, err := s.Delete(itemFromDB.ID)
+	if err != nil {
+		t.Fatal(err.Error())
+	}
+
+	if deletedItem.ID != itemFromDB.ID {
+		t.Fatalf("Invalid ID, got '%s' expected '%s'", deletedItem.ID, itemFromDB.ID)
 	}
 }
