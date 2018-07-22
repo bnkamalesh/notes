@@ -20,11 +20,11 @@ const (
 )
 
 var (
-	svr1Logger = log.New(os.Stderr, string(Svr1), log.LstdFlags|log.Lshortfile)
-	svr2Logger = log.New(os.Stderr, string(Svr2), log.LstdFlags|log.Lshortfile)
-	svr3Logger = log.New(os.Stderr, string(Svr3), log.LstdFlags|log.Lshortfile)
-	svr4Logger = log.New(os.Stdout, string(Svr4), log.LstdFlags|log.Lshortfile)
-	svr5Logger = log.New(os.Stdout, string(Svr5), log.LstdFlags|log.Lshortfile)
+	svr1Logger = log.New(os.Stderr, string(Svr1), log.LstdFlags|log.Llongfile)
+	svr2Logger = log.New(os.Stderr, string(Svr2), log.LstdFlags|log.Llongfile)
+	svr3Logger = log.New(os.Stderr, string(Svr3), log.LstdFlags|log.Llongfile)
+	svr4Logger = log.New(os.Stdout, string(Svr4), log.LstdFlags|log.Llongfile)
+	svr5Logger = log.New(os.Stdout, string(Svr5), log.LstdFlags|log.Llongfile)
 )
 
 type severity string

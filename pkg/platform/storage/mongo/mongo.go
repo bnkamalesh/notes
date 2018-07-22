@@ -13,6 +13,7 @@ var (
 	randomValue = uuid.New().String()
 	randomKey   = uuid.New().String()
 	randomQuery = bson.M{randomKey: randomValue}
+
 	// ErrNotFound is returned when the document was not found in Mongo collection
 	ErrNotFound = errors.New("Document not found")
 )
@@ -104,50 +105,60 @@ func (ms *Handler) InsertInfo(collectionName string, data interface{}) (string, 
 	return id, nil
 }
 
-// FindOne finds a document with the given ID
-func (ms *Handler) FindOne(collectionName, id string, result interface{}) (map[string]interface{}, error) {
-	if !bson.IsObjectIdHex(id) {
-		return nil, errors.New("Invalid ID provided")
-	}
-	objID := bson.ObjectIdHex(id)
-
+// Find finds all records matching the query
+func (ms *Handler) Find(collectionName string, query, selectFields interface{}, sort []string, start, limit int, result interface{}) ([]map[string]interface{}, error) {
 	session, collection := ms.sessionCollection(collectionName)
 	defer session.Close()
-
 	if result != nil {
-		return nil, collection.FindId(objID).One(result)
-	}
+		err := collection.Find(query).Select(selectFields).Sort(sort...).All(result)
+		if err == mgo.ErrNotFound {
+			return nil, ErrNotFound
+		}
 
-	out := make(map[string]interface{}, 0)
-	err := collection.FindId(objID).One(&out)
-	if err == mgo.ErrNotFound {
-		return nil, ErrNotFound
+		return nil, err
 	}
+	out := make([]map[string]interface{}, 0)
+	err := collection.Find(query).Select(selectFields).Sort(sort...).Skip(start).Limit(limit).All(&out)
 	return out, err
 }
 
-// UpdateOne updates a document with the given ID
-func (ms *Handler) UpdateOne(collectionName, id string, data interface{}) error {
-	if !bson.IsObjectIdHex(id) {
-		return errors.New("Invalid ID provided")
-	}
-	objID := bson.ObjectIdHex(id)
-
+// FindOne finds and returns the first matching document based on the provided query
+func (ms *Handler) FindOne(collectionName string, query, selectFields interface{}, sort []string, result interface{}) (map[string]interface{}, error) {
 	session, collection := ms.sessionCollection(collectionName)
 	defer session.Close()
+	if result != nil {
+		err := collection.Find(query).Select(selectFields).Sort(sort...).One(result)
+		if err == mgo.ErrNotFound {
+			return nil, ErrNotFound
+		}
 
-	return collection.UpdateId(objID, data)
+		return nil, err
+	}
+	out := make(map[string]interface{}, 0)
+	err := collection.Find(query).Select(selectFields).Sort(sort...).One(&out)
+	return out, err
 }
 
-// DeleteOne deletes a document with the given ID
-func (ms *Handler) DeleteOne(collectionName, id string) error {
-	if !bson.IsObjectIdHex(id) {
-		return errors.New("Invalid ID provided")
-	}
-	objID := bson.ObjectIdHex(id)
-
+// Update updates the first document matching the query
+func (ms *Handler) Update(collectionName string, query, data interface{}) error {
 	session, collection := ms.sessionCollection(collectionName)
 	defer session.Close()
 
-	return collection.RemoveId(objID)
+	err := collection.Update(query, data)
+	if err == mgo.ErrNotFound {
+		return ErrNotFound
+	}
+	return err
+}
+
+// Delete deletes the first document matching the given query
+func (ms *Handler) Delete(collectionName string, query interface{}) error {
+	session, collection := ms.sessionCollection(collectionName)
+	defer session.Close()
+
+	err := collection.Remove(query)
+	if err == mgo.ErrNotFound {
+		return ErrNotFound
+	}
+	return err
 }

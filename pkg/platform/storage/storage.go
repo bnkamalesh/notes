@@ -18,15 +18,17 @@ type Service interface {
 	// Save saves given data into the store and return the meta info and error if any
 	Save(bucket string, data interface{}) (*DocMeta, error)
 
-	// FindOne finds a single document with the provided ID, and loads in result if result is
-	// provided
-	FindOne(bucket, id string, result interface{}) (map[string]interface{}, error)
+	// Update updates the first record matching the given query and new data
+	Update(bucket string, query interface{}, data interface{}) error
 
-	// UpdateOne updates a record with the given ID and new data
-	UpdateOne(bucket, id string, data interface{}) (*DocMeta, error)
+	// Delete deletes the first record matching the provided query
+	Delete(collectionName string, query interface{}) error
 
-	// DeleteOne deletes a record with the given ID
-	DeleteOne(bucket, id string) (*DocMeta, error)
+	// Find finds all the records matching the query
+	Find(bucket string, query, selectFields interface{}, sort []string, start, limit int, result interface{}) ([]map[string]interface{}, error)
+
+	// FindOne finds the first matching document for the given query
+	FindOne(bucket string, query, selectFields interface{}, sort []string, result interface{}) (map[string]interface{}, error)
 }
 
 // handlerServices interface defines all the methods required to be a storage service
@@ -34,15 +36,17 @@ type handlerServices interface {
 	// InsertInfo inserts a new record and return the inserted record's ID
 	InsertInfo(bucket string, data interface{}) (string, error)
 
-	// FindOne finds a single document with the provided ID, and loads in result if result is
-	// provided
-	FindOne(bucket, id string, result interface{}) (map[string]interface{}, error)
+	// Update updates the first record matching the given query and new data
+	Update(bucket string, query interface{}, data interface{}) error
 
-	// UpdateOne updates a record with the given ID and new data
-	UpdateOne(bucket, id string, data interface{}) error
+	// Delete delets the first record matching the query
+	Delete(collectionName string, query interface{}) error
 
-	// DeleteOne deletes a record with the given ID
-	DeleteOne(bucket, id string) error
+	// Find finds all the records matching the query
+	Find(bucket string, query, selectFields interface{}, sort []string, start, limit int, result interface{}) ([]map[string]interface{}, error)
+
+	// FindOne finds the first matching document for the given query
+	FindOne(bucket string, query, selectFields interface{}, sort []string, result interface{}) (map[string]interface{}, error)
 }
 
 // Config struct holds all the configurations required for the store
@@ -82,37 +86,46 @@ func (s *Store) Save(bucket string, data interface{}) (*DocMeta, error) {
 	}, nil
 }
 
-// FindOne finds a single record based on the provided ID
-func (s *Store) FindOne(bucket, id string, result interface{}) (map[string]interface{}, error) {
-	out, err := s.handler.FindOne(bucket, id, result)
+// Find finds all the records based on the provided query
+func (s *Store) Find(bucket string, query, selectFields interface{}, sort []string, start, limit int, result interface{}) ([]map[string]interface{}, error) {
+	out, err := s.handler.Find(bucket, query, selectFields, sort, start, limit, result)
 	if err == mongo.ErrNotFound {
 		return nil, ErrNotFound
 	}
 	return out, err
 }
 
-// UpdateOne updates a record with the given ID and new data
-func (s *Store) UpdateOne(bucket, id string, data interface{}) (*DocMeta, error) {
-	err := s.handler.UpdateOne(bucket, id, data)
-	if err != nil {
-		if err == mongo.ErrNotFound {
-			return nil, ErrNotFound
-		}
-		return nil, err
+// FindOne finds the first document matching the provided query
+func (s *Store) FindOne(bucket string, query, selectFields interface{}, sort []string, result interface{}) (map[string]interface{}, error) {
+	out, err := s.handler.FindOne(bucket, query, selectFields, sort, result)
+	if err == mongo.ErrNotFound {
+		return nil, ErrNotFound
 	}
-	return &DocMeta{ID: id, Count: 1}, nil
+	return out, err
 }
 
-// DeleteOne deletes a record with the given ID
-func (s *Store) DeleteOne(bucket, id string) (*DocMeta, error) {
-	err := s.handler.DeleteOne(bucket, id)
+// Update updates the first record matching the query
+func (s *Store) Update(bucket string, query interface{}, data interface{}) error {
+	err := s.handler.Update(bucket, query, data)
 	if err != nil {
 		if err == mongo.ErrNotFound {
-			return nil, ErrNotFound
+			return ErrNotFound
 		}
-		return nil, err
+		return err
 	}
-	return &DocMeta{ID: id, Count: 1}, nil
+	return nil
+}
+
+// Delete deletes the first record matching the query
+func (s *Store) Delete(bucket string, query interface{}) error {
+	err := s.handler.Delete(bucket, query)
+	if err != nil {
+		if err == mongo.ErrNotFound {
+			return ErrNotFound
+		}
+		return err
+	}
+	return nil
 }
 
 // New returns a new Service instance

@@ -20,7 +20,7 @@ func Webgo() *webgo.Config {
 // Store returns the configuration required for the primary datastore
 func Store() storage.Config {
 	return storage.Config{
-		Name:        "gonotes",
+		Name:        "notes",
 		Hosts:       []string{"127.0.0.1:27017"},
 		Timeout:     time.Second * 3,
 		DialTimeout: time.Second * 15,

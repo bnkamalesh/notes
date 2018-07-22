@@ -3,11 +3,12 @@ package items
 import (
 	"testing"
 
+	"github.com/bnkamalesh/notes/pkg/items"
 	"github.com/bnkamalesh/notes/pkg/platform/logger"
 	"github.com/bnkamalesh/notes/pkg/platform/storage"
 )
 
-func service() (*Service, error) {
+func service() (*items.Service, error) {
 	store, err := storage.New(storage.Config{
 		Name:  "gonotes_test",
 		Hosts: []string{"127.0.0.1:27017"},
@@ -16,8 +17,17 @@ func service() (*Service, error) {
 		return nil, err
 	}
 	logHandler := logger.New()
-	service := NewService(store, logHandler)
+	service := items.NewService(store, logHandler)
 	return &service, nil
+}
+
+func newItem() (*items.Item, map[string]string, error) {
+	payload := map[string]string{
+		"title":       "Hello world",
+		"description": "Hello world description",
+	}
+	item, err := items.New(payload, "testOwner")
+	return item, payload, err
 }
 
 func TestCreate(t *testing.T) {
@@ -26,14 +36,12 @@ func TestCreate(t *testing.T) {
 		t.Fatal(err.Error())
 	}
 
-	payload := map[string]string{
-		"title":       "Hello world",
-		"description": "Hello world description",
-		"ownerID":     "testOwner",
+	item, payload, err := newItem()
+	if err != nil {
+		t.Fatal(err.Error())
 	}
-
 	// Test create
-	item, err := s.Create(payload)
+	item, err = s.Create(*item)
 	if err != nil {
 		t.Fatal(err.Error())
 	}
@@ -47,8 +55,8 @@ func TestCreate(t *testing.T) {
 	if item.Description != payload["description"] {
 		t.Fatalf("Invalid description, got '%s' expected '%s'", item.Description, payload["description"])
 	}
-	if item.OwnerID != payload["ownerID"] {
-		t.Fatalf("Invalid OwnerID, got '%s' expected '%s'", item.OwnerID, payload["ownerID"])
+	if item.OwnerID != "testOwner" {
+		t.Fatalf("Invalid OwnerID, got '%s' expected '%s'", item.OwnerID, "testOwner")
 	}
 	_, err = s.Delete(item.ID)
 	if err != nil {
@@ -61,12 +69,11 @@ func TestRead(t *testing.T) {
 	if err != nil {
 		t.Fatal(err.Error())
 	}
-	payload := map[string]string{
-		"title":       "Hello world",
-		"description": "Hello world description",
-		"ownerID":     "testOwner",
+	item, _, err := newItem()
+	if err != nil {
+		t.Fatal(err.Error())
 	}
-	item, err := s.Create(payload)
+	item, err = s.Create(*item)
 	if err != nil {
 		t.Fatal(err.Error())
 	}
@@ -90,12 +97,11 @@ func TestUpdate(t *testing.T) {
 	if err != nil {
 		t.Fatal(err.Error())
 	}
-	payload := map[string]string{
-		"title":       "Hello world",
-		"description": "Hello world description",
-		"ownerID":     "testOwner",
+	item, _, err := newItem()
+	if err != nil {
+		t.Fatal(err.Error())
 	}
-	item, err := s.Create(payload)
+	item, err = s.Create(*item)
 	if err != nil {
 		t.Fatal(err.Error())
 	}
@@ -130,12 +136,11 @@ func TestDelete(t *testing.T) {
 	if err != nil {
 		t.Fatal(err.Error())
 	}
-	payload := map[string]string{
-		"title":       "Hello world",
-		"description": "Hello world description",
-		"ownerID":     "testOwner",
+	item, _, err := newItem()
+	if err != nil {
+		t.Fatal(err.Error())
 	}
-	item, err := s.Create(payload)
+	item, err = s.Create(*item)
 	if err != nil {
 		t.Fatal(err.Error())
 	}
@@ -153,4 +158,59 @@ func TestDelete(t *testing.T) {
 	if deletedItem.ID != itemFromDB.ID {
 		t.Fatalf("Invalid ID, got '%s' expected '%s'", deletedItem.ID, itemFromDB.ID)
 	}
+}
+
+func TestList(t *testing.T) {
+	s, err := service()
+	if err != nil {
+		t.Fatal(err.Error())
+	}
+	payload1 := map[string]string{
+		"title":       "Hello world",
+		"description": "Hello world description",
+	}
+	item1, err := items.New(payload1, "testOwner")
+	if err != nil {
+		t.Fatal(err.Error())
+	}
+
+	cItem1, err := s.Create(*item1)
+	if err != nil {
+		t.Fatal(err.Error())
+	}
+
+	payload2 := map[string]string{
+		"title":       "Hello world 2",
+		"description": "Hello world description 2",
+	}
+	item2, err := items.New(payload2, "testOwner")
+	if err != nil {
+		t.Fatal(err.Error())
+	}
+
+	cItem2, err := s.Create(*item2)
+	if err != nil {
+		t.Fatal(err.Error())
+	}
+
+	ii, err := s.List("testOwner", 0, 100)
+	if err != nil {
+		t.Fatal(err.Error())
+	}
+
+	if len(ii) != 2 {
+		t.Fatalf("Expected '%d', got '%d' results.", 2, len(ii))
+	} else {
+		for _, i := range ii {
+			if i.Title != cItem1.Title && i.Title != cItem2.Title {
+				t.Fatalf("Expected '%s' or '%s', got '%s'", cItem1.Title, cItem2.Title, i.Title)
+			}
+			id := i.ID
+			_, err := s.Delete(id)
+			if err != nil {
+				t.Fatal(err)
+			}
+		}
+	}
+
 }

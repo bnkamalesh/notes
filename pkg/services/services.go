@@ -5,17 +5,22 @@ import (
 	"github.com/bnkamalesh/notes/pkg/items"
 	"github.com/bnkamalesh/notes/pkg/platform/logger"
 	"github.com/bnkamalesh/notes/pkg/platform/storage"
+	"github.com/bnkamalesh/notes/pkg/users"
 )
 
 // Handler holds all the services of the app
 type Handler struct {
 	Items items.Service
+	Users users.Service
 }
 
-// New returns
+// New returns a new Service instance with all the internal services initialized
 func New(ss storage.Service, l logger.Service) Handler {
 	iS := items.NewService(ss, l)
+	uS := users.NewService(ss, l, iS)
+
 	return Handler{
 		Items: iS,
+		Users: uS,
 	}
 }
