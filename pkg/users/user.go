@@ -4,7 +4,6 @@ package users
 import (
 	"crypto/aes"
 	"crypto/sha512"
-	"encoding/base64"
 	"errors"
 	"strings"
 	"time"
@@ -67,7 +66,7 @@ type User struct {
 	ID                string     `json:"id,omitempty" bson:"id,omitempty"`
 	Name              string     `json:"name,omitempty" bson:"name,omitempty"`
 	Email             string     `json:"email,omitempty" bson:"email,omitempty"`
-	Password          string     `json:"-" bson:"password,omitempty"`
+	Password          []byte     `json:"-" bson:"password,omitempty"`
 	Salt              string     `json:"-" bson:"salt,omitempty"`
 	authToken         string     `bson:"-"`
 	encryptedPassword string     `bson:"-"`
@@ -93,10 +92,10 @@ func (u *User) passwordStr() (string, error) {
 }
 
 // hash accepts a string and returns a SHA512 hashed string
-func hash(str string, salt string) string {
-	hasher.Write([]byte(str + salt))
-	sha := base64.URLEncoding.EncodeToString(hasher.Sum(nil))
-	return sha
+func hash(str string, salt string) []byte {
+	hasher.Sum([]byte(str + salt))
+	// sha := base64.URLEncoding.EncodeToString()
+	return hasher.Sum(nil)
 }
 
 // Create creates a new user

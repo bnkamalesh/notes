@@ -76,10 +76,10 @@ func TestAuth(t *testing.T) {
 
 	authUser, err := s.Authenticate(createdUsr.Email, payload["password"])
 	if err != nil {
-		t.Fatalf("%s %s %s", createdUsr.Email, payload["password"], err.Error())
+		t.Fatalf("authenticate failed, email '%s',  password '%s', error: '%s'", createdUsr.Email, payload["password"], err.Error())
 	}
 	if createdUsr.ID != authUser.ID {
-		t.Fatalf("Expected ID, '%s', got '%s'", createdUsr.ID, authUser.ID)
+		t.Fatalf("Expected user ID, '%s', got '%s'", createdUsr.ID, authUser.ID)
 	}
 }
 func TestAddItem(t *testing.T) {
