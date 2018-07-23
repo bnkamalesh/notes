@@ -2,7 +2,10 @@ package users
 
 import (
 	"crypto/aes"
+	"crypto/cipher"
+	"crypto/rand"
 	"encoding/hex"
+	"io"
 
 	"github.com/google/uuid"
 )
@@ -26,15 +29,29 @@ func (s *Service) Authenticate(email, password string) (*User, error) {
 	}
 
 	user.authToken = authToken(user)
-	block, err := aes.NewCipher([]byte(user.authToken))
+	key, err := user.encryptionKey(user.authToken, user.Salt)
 	if err != nil {
 		return nil, err
 	}
 
-	src := []byte(password)
-	dst := make([]byte, len(src))
-	block.Encrypt(dst, src)
-	user.encryptedPassword = string(dst)
+	block, err := aes.NewCipher(key[:])
+	if err != nil {
+		return nil, err
+	}
+
+	gcm, err := cipher.NewGCM(block)
+	if err != nil {
+		return nil, err
+	}
+
+	nonce := make([]byte, gcm.NonceSize())
+	_, err = io.ReadFull(rand.Reader, nonce)
+	if err != nil {
+		return nil, err
+	}
+
+	user.encryptedPassword = gcm.Seal(nonce, nonce, []byte(password), nil)
+
 	user.ownerID = hex.EncodeToString(hash(email, password))
 
 	return user, nil

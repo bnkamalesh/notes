@@ -106,8 +106,25 @@ func TestAddItem(t *testing.T) {
 		t.Fatalf("Expected ID, '%s', got '%s'", createdUsr.ID, authUser.ID)
 	}
 
-	_, err = s.AddItem(authUser, map[string]string{"title": "Hello", "description": "well well well"})
+	itemPayload := map[string]string{
+		"title":       "Hello",
+		"description": "well well well",
+	}
+
+	item, err := s.AddItem(authUser, itemPayload)
 	if err != nil {
 		t.Fatal(err.Error())
+	}
+
+	rI, err := s.Item(authUser, item.ID)
+	if err != nil {
+		t.Fatal(err.Error())
+	}
+	if rI.ID != item.ID {
+		t.Fatalf("Expected item ID '%s', got '%s'", item.ID, rI.ID)
+	}
+
+	if rI.Description != itemPayload["description"] {
+		t.Fatalf("Expected item description '%s', got '%s'", itemPayload["description"], rI.Description)
 	}
 }

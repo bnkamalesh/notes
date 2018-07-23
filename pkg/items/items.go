@@ -3,7 +3,10 @@ package items
 
 import (
 	"crypto/aes"
+	"crypto/cipher"
+	"crypto/rand"
 	"errors"
+	"io"
 	"strings"
 	"time"
 
@@ -66,16 +69,24 @@ func New(data map[string]string, ownerID string) (*Item, error) {
 }
 
 // Encrypt encrypts the item description and sets the Blob with encrypted bytes
-func (i *Item) Encrypt(key string) error {
-	block, err := aes.NewCipher([]byte(key))
+func (i *Item) Encrypt(key [32]byte) error {
+	block, err := aes.NewCipher(key[:])
 	if err != nil {
 		return err
 	}
 
-	src := []byte(i.Description)
-	dst := make([]byte, len(src))
-	block.Encrypt(dst, src)
-	i.Blob = dst
+	gcm, err := cipher.NewGCM(block)
+	if err != nil {
+		return err
+	}
+
+	nonce := make([]byte, gcm.NonceSize())
+	_, err = io.ReadFull(rand.Reader, nonce)
+	if err != nil {
+		return err
+	}
+
+	i.Blob = gcm.Seal(nonce, nonce, []byte(i.Description), nil)
 
 	// Emptying the description to prevent it from being saved as plain text
 	i.Description = ""
@@ -83,16 +94,30 @@ func (i *Item) Encrypt(key string) error {
 }
 
 // Decrypt decrpyts an item Description with the provided key
-func (i *Item) Decrypt(key string) error {
-	block, err := aes.NewCipher([]byte(key))
+func (i *Item) Decrypt(key [32]byte) error {
+	block, err := aes.NewCipher(key[:])
 	if err != nil {
 		return err
 	}
 
-	dst := make([]byte, 0)
-	block.Decrypt(dst, i.Blob)
-	i.Blob = nil
-	i.Description = string(dst)
+	gcm, err := cipher.NewGCM(block)
+	if err != nil {
+		return err
+	}
+
+	if len(i.Blob) < gcm.NonceSize() {
+		return errors.New("malformed ciphertext")
+	}
+
+	str, err := gcm.Open(nil,
+		i.Blob[:gcm.NonceSize()],
+		i.Blob[gcm.NonceSize():],
+		nil,
+	)
+	if err != nil {
+		return err
+	}
+	i.Description = string(str)
 	return nil
 }
 

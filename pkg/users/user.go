@@ -3,6 +3,7 @@ package users
 
 import (
 	"crypto/aes"
+	"crypto/cipher"
 	"crypto/sha512"
 	"errors"
 	"strings"
@@ -69,7 +70,7 @@ type User struct {
 	Password          []byte     `json:"-" bson:"password,omitempty"`
 	Salt              string     `json:"-" bson:"salt,omitempty"`
 	authToken         string     `bson:"-"`
-	encryptedPassword string     `bson:"-"`
+	encryptedPassword []byte     `bson:"-"`
 	ownerID           string     `bson:"-"`
 	CreatedAt         *time.Time `json:"createdAt,omitempty" bson:"createdAt,omitempty"`
 	ModifiedAt        *time.Time `json:"modifiedAt,omitempty" bson:"modifiedAt,omitempty"`
@@ -82,19 +83,47 @@ func (u *User) passwordStr() (string, error) {
 	if u.authToken == "" {
 		return "", ErrNotAuthenticated
 	}
-	block, err := aes.NewCipher([]byte(u.authToken))
+
+	key, err := u.encryptionKey(u.authToken, u.Salt)
 	if err != nil {
 		return "", err
 	}
-	dst := make([]byte, 0)
-	block.Decrypt(dst, []byte(u.encryptedPassword))
-	return string(dst), nil
+
+	block, err := aes.NewCipher(key[:])
+	if err != nil {
+		return "", err
+	}
+
+	gcm, err := cipher.NewGCM(block)
+	if err != nil {
+		return "", err
+	}
+
+	if len(u.encryptedPassword) < gcm.NonceSize() {
+		return "", errors.New("malformed ciphertext")
+	}
+
+	str, err := gcm.Open(nil,
+		u.encryptedPassword[:gcm.NonceSize()],
+		u.encryptedPassword[gcm.NonceSize():],
+		nil,
+	)
+	if err != nil {
+		return "", nil
+	}
+	return string(str), nil
+}
+
+func (u *User) encryptionKey(key, salt string) ([32]byte, error) {
+	b := hash(key, salt)
+	var bk [32]byte
+	copy(bk[:], b[:32])
+	return bk, nil
 }
 
 // hash accepts a string and returns a SHA512 hashed string
 func hash(str string, salt string) []byte {
 	hasher.Sum([]byte(str + salt))
-	// sha := base64.URLEncoding.EncodeToString()
 	return hasher.Sum(nil)
 }
 
@@ -147,7 +176,12 @@ func (s *Service) AddItem(user *User, data map[string]string) (*items.Item, erro
 	if err != nil {
 		return nil, err
 	}
-	key, err := user.passwordStr()
+	pwd, err := user.passwordStr()
+	if err != nil {
+		return nil, err
+	}
+
+	key, err := user.encryptionKey(pwd, user.authToken)
 	if err != nil {
 		return nil, err
 	}
@@ -176,7 +210,12 @@ func (s *Service) Item(user *User, itemID string) (*items.Item, error) {
 		return nil, err
 	}
 
-	key, err := user.passwordStr()
+	pwd, err := user.passwordStr()
+	if err != nil {
+		return nil, err
+	}
+
+	key, err := user.encryptionKey(pwd, user.authToken)
 	if err != nil {
 		return nil, err
 	}
