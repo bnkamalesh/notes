@@ -4,8 +4,11 @@ package users
 import (
 	"crypto/aes"
 	"crypto/cipher"
+	"crypto/rand"
 	"crypto/sha512"
+	"encoding/hex"
 	"errors"
+	"io"
 	"strings"
 	"time"
 
@@ -36,6 +39,8 @@ var (
 	// ErrNotAuthenticated is returned when the user is not authenticated and trying to perform
 	// an action which requires authentication
 	ErrNotAuthenticated = errors.New("Sorry, the user is not authenticated")
+	// ErrUnauthorized is returned whenever the user tries to perform an unauthorized action
+	ErrUnauthorized = errors.New("Sorry, you're not authorized to perform this action")
 )
 
 // New returns a user instance based on the provided data
@@ -71,9 +76,16 @@ type User struct {
 	Salt              string     `json:"-" bson:"salt,omitempty"`
 	authToken         string     `bson:"-"`
 	encryptedPassword []byte     `bson:"-"`
-	ownerID           string     `bson:"-"`
 	CreatedAt         *time.Time `json:"createdAt,omitempty" bson:"createdAt,omitempty"`
 	ModifiedAt        *time.Time `json:"modifiedAt,omitempty" bson:"modifiedAt,omitempty"`
+}
+
+func (u *User) ownerID() (string, error) {
+	password, err := u.passwordStr()
+	if err != nil {
+		return "", err
+	}
+	return hex.EncodeToString(hash(u.Email, password)), nil
 }
 
 // passwordStr returns the password of user in clear-text based on the authentication token
@@ -112,6 +124,33 @@ func (u *User) passwordStr() (string, error) {
 		return "", nil
 	}
 	return string(str), nil
+}
+
+// setEncryptedPassword sets the encrypted password in user struct field
+func (u *User) setEncryptedPassword(password string) error {
+	key, err := u.encryptionKey(u.authToken, u.Salt)
+	if err != nil {
+		return err
+	}
+
+	block, err := aes.NewCipher(key[:])
+	if err != nil {
+		return err
+	}
+
+	gcm, err := cipher.NewGCM(block)
+	if err != nil {
+		return err
+	}
+
+	nonce := make([]byte, gcm.NonceSize())
+	_, err = io.ReadFull(rand.Reader, nonce)
+	if err != nil {
+		return err
+	}
+
+	u.encryptedPassword = gcm.Seal(nonce, nonce, []byte(password), nil)
+	return nil
 }
 
 func (u *User) encryptionKey(key, salt string) ([32]byte, error) {
@@ -170,9 +209,46 @@ func (s *Service) Read(email string) (*User, error) {
 	return &user, nil
 }
 
-// AddItem adds a new item owned by the user
-func (s *Service) AddItem(user *User, data map[string]string) (*items.Item, error) {
-	item, err := items.New(data, user.ownerID)
+// Update reads a user given the email
+func (s *Service) Update(user *User, data map[string]string) (*User, error) {
+	name := strings.TrimSpace(data["name"])
+	password := strings.TrimSpace(data["password"])
+
+	if len(name) != 0 {
+		user.Name = name
+	}
+
+	if len(password) != 0 {
+		pwdHash := hex.EncodeToString(hash(password, user.Salt))
+		savedPwdHash := hex.EncodeToString(user.Password)
+		if pwdHash != savedPwdHash {
+			// Decrypt and encrypt all items of the user with the new password
+			// Should update owner ID also
+		}
+	}
+	return user, nil
+}
+
+// Delete deletes the provided User
+func (s *Service) Delete(user *User) (*User, error) {
+	err := s.store.Delete(userBucket, map[string]interface{}{
+		"id": user.ID,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return user, nil
+}
+
+// CreateItem adds a new item owned by the user
+func (s *Service) CreateItem(user *User, data map[string]string) (*items.Item, error) {
+	ownerID, err := user.ownerID()
+	if err != nil {
+		return nil, err
+	}
+
+	item, err := items.New(data, ownerID)
 	if err != nil {
 		return nil, err
 	}
@@ -194,9 +270,78 @@ func (s *Service) AddItem(user *User, data map[string]string) (*items.Item, erro
 	return s.items.Create(*item)
 }
 
+// UpdateItem updates an item owned by the user
+func (s *Service) UpdateItem(user *User, itemID string, data map[string]string) (*items.Item, error) {
+	ownerID, err := user.ownerID()
+	if err != nil {
+		return nil, err
+	}
+
+	item, err := s.items.Read(itemID)
+	if err != nil {
+		return nil, err
+	}
+
+	if item.OwnerID != ownerID {
+		return nil, ErrUnauthorized
+	}
+
+	updatedItem, err := items.New(data, ownerID)
+	if err != nil {
+		return nil, err
+	}
+	updatedItem.ID = itemID
+
+	pwd, err := user.passwordStr()
+	if err != nil {
+		return nil, err
+	}
+
+	key, err := user.encryptionKey(pwd, user.authToken)
+	if err != nil {
+		return nil, err
+	}
+
+	err = updatedItem.Encrypt(key)
+	if err != nil {
+		return nil, err
+	}
+
+	updatedItem, err = s.items.Update(itemID, *updatedItem)
+	if err != nil {
+		return nil, err
+	}
+
+	return updatedItem, err
+}
+
+// DeleteItem removes an item owned by the user
+func (s *Service) DeleteItem(user *User, itemID string) (*items.Item, error) {
+	ownerID, err := user.ownerID()
+	if err != nil {
+		return nil, err
+	}
+
+	item, err := s.items.Read(itemID)
+	if err != nil {
+		return nil, err
+	}
+
+	if item.OwnerID != ownerID {
+		return nil, ErrUnauthorized
+	}
+
+	item, err = s.items.Delete(itemID)
+	return item, err
+}
+
 // Items returns list of items the user owns
 func (s *Service) Items(user *User, start, limit int) ([]items.Item, error) {
-	ii, err := s.items.List(user.ownerID, start, limit)
+	ownerID, err := user.ownerID()
+	if err != nil {
+		return nil, err
+	}
+	ii, err := s.items.List(ownerID, start, limit)
 	if err != nil {
 		return nil, err
 	}

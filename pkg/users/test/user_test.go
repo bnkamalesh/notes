@@ -56,6 +56,45 @@ func TestCreate(t *testing.T) {
 	if createdUsr.Name != u.Name {
 		t.Fatalf("Expected name '%s', got '%s'", u.Name, createdUsr.Name)
 	}
+
+	_, err = s.Delete(createdUsr)
+	if err != nil {
+		t.Fatalf(err.Error())
+	}
+}
+func TestRead(t *testing.T) {
+	s, err := service()
+	if err != nil {
+		t.Fatal(err.Error())
+	}
+	u, _, err := newUser()
+	if err != nil {
+		t.Fatal(err.Error())
+	}
+
+	createdUsr, err := s.Create(*u)
+	if err != nil {
+		t.Fatal(err.Error())
+	}
+	if createdUsr.ID == "" {
+		t.Fatal("Invalid or no ID")
+	}
+	if createdUsr.Email != u.Email {
+		t.Fatalf("Expected email '%s', got '%s'", u.Email, createdUsr.Email)
+	}
+	if createdUsr.Name != u.Name {
+		t.Fatalf("Expected name '%s', got '%s'", u.Name, createdUsr.Name)
+	}
+
+	readUser, err := s.Read(createdUsr.Email)
+	if err != nil {
+		t.Fatalf("Expected email '%s', got '%s'", createdUsr.Email, readUser.Email)
+	}
+
+	_, err = s.Delete(createdUsr)
+	if err != nil {
+		t.Fatalf(err.Error())
+	}
 }
 
 func TestAuth(t *testing.T) {
@@ -80,6 +119,11 @@ func TestAuth(t *testing.T) {
 	}
 	if createdUsr.ID != authUser.ID {
 		t.Fatalf("Expected user ID, '%s', got '%s'", createdUsr.ID, authUser.ID)
+	}
+
+	_, err = s.Delete(createdUsr)
+	if err != nil {
+		t.Fatalf(err.Error())
 	}
 }
 func TestAddItem(t *testing.T) {
@@ -111,7 +155,7 @@ func TestAddItem(t *testing.T) {
 		"description": "well well well",
 	}
 
-	item, err := s.AddItem(authUser, itemPayload)
+	item, err := s.CreateItem(authUser, itemPayload)
 	if err != nil {
 		t.Fatal(err.Error())
 	}
@@ -126,5 +170,9 @@ func TestAddItem(t *testing.T) {
 
 	if rI.Description != itemPayload["description"] {
 		t.Fatalf("Expected item description '%s', got '%s'", itemPayload["description"], rI.Description)
+	}
+	_, err = s.Delete(createdUsr)
+	if err != nil {
+		t.Fatalf(err.Error())
 	}
 }

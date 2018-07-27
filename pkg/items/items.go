@@ -157,6 +157,8 @@ func (s *Service) Update(id string, data Item) (*Item, error) {
 
 	item.Title = data.Title
 	item.Description = data.Description
+	item.Blob = data.Blob
+
 	now := time.Now()
 	item.ModifiedAt = &now
 
