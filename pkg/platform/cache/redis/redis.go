@@ -13,6 +13,8 @@ import (
 var (
 	// ErrInvHosts is returned when the provided host(s) is/are invalid
 	ErrInvHosts = errors.New("Invalid hosts provided")
+	// ErrPing is the error returned in case of ping failure
+	ErrPing = errors.New("Ping failed")
 )
 
 // Config struct has all the configurations required for redis
@@ -57,7 +59,10 @@ func (h *Handler) Get(key string, result interface{}) error {
 // Ping pings the redis server
 func (h *Handler) Ping() error {
 	result := h.ring.Ping()
-	fmt.Println("ping result:", result)
+	if result.Val() != "PONG" {
+		return ErrPing
+	}
+
 	return nil
 }
 

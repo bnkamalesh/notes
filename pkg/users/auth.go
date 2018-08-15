@@ -1,14 +1,25 @@
 package users
 
 import (
+	"bytes"
 	"encoding/hex"
+	"time"
 
 	"github.com/google/uuid"
 )
 
 // setAuthCache will store the user object in cache
-func setAuthCache(token string, user *User) error {
-	return nil
+func (s *Service) setAuthCache(token string, user *User) error {
+	return s.cache.Set(token, user, time.Hour*24)
+}
+
+func (s *Service) getAuthCache(token string) (*User, error) {
+	user := User{}
+	err := s.cache.Get(token, &user)
+	if err != nil {
+		return nil, err
+	}
+	return &user, nil
 }
 
 // cacheAuthToken will store the authtoken in cache after mixing it with salt
@@ -28,20 +39,26 @@ func (s *Service) Authenticate(email, password, tokenSalt string) (*User, error)
 		return nil, err
 	}
 
-	pwdHash := hex.EncodeToString(hash(password, user.Salt))
-	savedPwdHash := hex.EncodeToString(user.Password)
-	if pwdHash != savedPwdHash {
+	pwdHash := hash(password, user.Salt)
+	savedPwdHash := user.Password
+	if !bytes.Equal(pwdHash, savedPwdHash) {
 		return nil, ErrInvPwd
 	}
 
 	user.AuthToken = authToken(user)
-	user.setEncryptedPassword(password)
-	setAuthCache(cacheAuthToken(user.AuthToken, tokenSalt), user)
+	err = user.setEncryptedPassword(password)
+	if err != nil {
+		return nil, err
+	}
+	err = s.setAuthCache(cacheAuthToken(user.AuthToken, tokenSalt), user)
+	if err != nil {
+		return nil, err
+	}
+
 	return user, nil
 }
 
 // AuthUser returns an authenticated user instance from the auth token
 func (s *Service) AuthUser(authToken string, tokenSalt string) (*User, error) {
-	user := User{}
-	return &user, nil
+	return s.getAuthCache(cacheAuthToken(authToken, tokenSalt))
 }

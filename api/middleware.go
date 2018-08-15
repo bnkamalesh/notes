@@ -2,7 +2,6 @@ package api
 
 import (
 	"context"
-	"fmt"
 	"net/http"
 	"strings"
 
@@ -37,6 +36,5 @@ func (h *Handler) mwareAuthenticate(rw http.ResponseWriter, req *http.Request) {
 			user,
 		),
 	)
-	fmt.Println(user)
 	*req = *reqwc
 }

@@ -5,6 +5,7 @@ import (
 
 	"github.com/bnkamalesh/notes/pkg/items"
 
+	"github.com/bnkamalesh/notes/pkg/platform/cache"
 	"github.com/bnkamalesh/notes/pkg/platform/logger"
 	"github.com/bnkamalesh/notes/pkg/platform/storage"
 )
@@ -17,9 +18,16 @@ func service() (*Service, error) {
 	if err != nil {
 		return nil, err
 	}
+	cache, err := cache.New(cache.Config{
+		Name:  "14",
+		Hosts: []string{"127.0.0.1:6379"},
+	})
+	if err != nil {
+		return nil, err
+	}
 	logHandler := logger.New()
 	iS := items.NewService(store, logHandler)
-	service := NewService(store, logHandler, iS)
+	service := NewService(store, cache, logHandler, iS)
 	return &service, nil
 }
 
@@ -118,6 +126,11 @@ func TestAuth(t *testing.T) {
 	}
 	if createdUsr.ID != authUser.ID {
 		t.Fatalf("Expected user ID, '%s', got '%s'", createdUsr.ID, authUser.ID)
+	}
+
+	pwd, _ := authUser.passwordStr()
+	if pwd != "hello world" {
+		t.Fatalf("Expected user ID, '%s', got '%s'", "hello world", pwd)
 	}
 
 	_, err = s.Delete(createdUsr)

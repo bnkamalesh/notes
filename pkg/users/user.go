@@ -24,8 +24,7 @@ const (
 )
 
 var (
-	hashSalt = uuid.New().String()
-	hasher   = sha512.New()
+	hasher = sha512.New()
 
 	// ErrEmail is returned when the email address provided is wrong
 	ErrEmail = errors.New("Invalid or no email provided")
@@ -42,6 +41,8 @@ var (
 	ErrNotAuthenticated = errors.New("Sorry, the user is not authenticated")
 	// ErrUnauthorized is returned whenever the user tries to perform an unauthorized action
 	ErrUnauthorized = errors.New("Sorry, you're not authorized to perform this action")
+	// ErrMalformedCipher is returned when the cipher text is invalid and cannot be used
+	ErrMalformedCipher = errors.New("malformed ciphertext")
 )
 
 func newUserID() string {
@@ -58,7 +59,7 @@ func New(data map[string]string) (*User, error) {
 	if password == "" {
 		return nil, ErrInvPwd
 	}
-
+	hashSalt := uuid.New().String()
 	now := time.Now()
 	user := &User{
 		ID:         newUserID(),
@@ -80,7 +81,7 @@ type User struct {
 	Password          []byte     `json:"-" bson:"password,omitempty"`
 	Salt              string     `json:"-" bson:"salt,omitempty"`
 	AuthToken         string     `bson:"-" json:"authToken,omitempty"`
-	encryptedPassword []byte     `bson:"-"`
+	EncryptedPassword []byte     `bson:"-" json:"-"`
 	CreatedAt         *time.Time `json:"createdAt,omitempty" bson:"createdAt,omitempty"`
 	ModifiedAt        *time.Time `json:"modifiedAt,omitempty" bson:"modifiedAt,omitempty"`
 }
@@ -116,13 +117,13 @@ func (u *User) passwordStr() (string, error) {
 		return "", err
 	}
 
-	if len(u.encryptedPassword) < gcm.NonceSize() {
-		return "", errors.New("malformed ciphertext")
+	if len(u.EncryptedPassword) < gcm.NonceSize() {
+		return "", ErrMalformedCipher
 	}
 
 	str, err := gcm.Open(nil,
-		u.encryptedPassword[:gcm.NonceSize()],
-		u.encryptedPassword[gcm.NonceSize():],
+		u.EncryptedPassword[:gcm.NonceSize()],
+		u.EncryptedPassword[gcm.NonceSize():],
 		nil,
 	)
 	if err != nil {
@@ -154,7 +155,7 @@ func (u *User) setEncryptedPassword(password string) error {
 		return err
 	}
 
-	u.encryptedPassword = gcm.Seal(nonce, nonce, []byte(password), nil)
+	u.EncryptedPassword = gcm.Seal(nonce, nonce, []byte(password), nil)
 	return nil
 }
 
@@ -223,12 +224,12 @@ func (s *Service) Update(user *User, data map[string]string) (*User, error) {
 	}
 
 	if len(password) != 0 {
-		pwdHash := hex.EncodeToString(hash(password, user.Salt))
-		savedPwdHash := hex.EncodeToString(user.Password)
-		if pwdHash != savedPwdHash {
-			// Decrypt and encrypt all items of the user with the new password
-			// Should update owner ID also
-		}
+		// pwdHash := hash(password, user.Salt)
+		// savedPwdHash := user.Password
+		// if pwdHash != savedPwdHash {
+		// Decrypt and encrypt all items of the user with the new password
+		// Should update owner ID also
+		// }
 	}
 	return user, nil
 }
@@ -369,7 +370,9 @@ func (s *Service) Item(user *User, itemID string) (*items.Item, error) {
 		return nil, err
 	}
 
-	i.Decrypt(key)
-
+	err = i.Decrypt(key)
+	if err != nil {
+		return nil, err
+	}
 	return i, nil
 }

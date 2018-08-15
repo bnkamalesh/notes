@@ -3,6 +3,7 @@ package services
 
 import (
 	"github.com/bnkamalesh/notes/pkg/items"
+	"github.com/bnkamalesh/notes/pkg/platform/cache"
 	"github.com/bnkamalesh/notes/pkg/platform/logger"
 	"github.com/bnkamalesh/notes/pkg/platform/storage"
 	"github.com/bnkamalesh/notes/pkg/users"
@@ -15,9 +16,9 @@ type Handler struct {
 }
 
 // New returns a new Service instance with all the internal services initialized
-func New(ss storage.Service, l logger.Service) Handler {
+func New(ss storage.Service, cs cache.Service, l logger.Service) Handler {
 	iS := items.NewService(ss, l)
-	uS := users.NewService(ss, l, iS)
+	uS := users.NewService(ss, cs, l, iS)
 
 	return Handler{
 		Items: iS,

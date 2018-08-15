@@ -32,7 +32,7 @@ type Service interface {
 
 type Config struct {
 	Hosts        []string
-	DB           string
+	Name         string
 	Password     string
 	DialTimeout  time.Duration
 	ReadTimeout  time.Duration
@@ -44,21 +44,21 @@ type Handler struct {
 }
 
 func (h *Handler) Set(key string, value interface{}, expiry time.Duration) error {
-	return nil
+	return h.client.Set(key, value, expiry)
 }
 
 func (h *Handler) Get(key string, result interface{}) error {
-	return nil
+	return h.client.Get(key, result)
 }
 
 func (h *Handler) Ping() error {
-	return nil
+	return h.client.Ping()
 }
 
-func New(c Config) *Handler {
+func New(c Config) (*Handler, error) {
 	h := &Handler{}
-	db, _ := strconv.Atoi(c.DB)
-	rh := redis.New(redis.Config{
+	db, _ := strconv.Atoi(c.Name)
+	rh, err := redis.New(redis.Config{
 		Hosts:        c.Hosts,
 		DB:           db,
 		Password:     c.Password,
@@ -66,6 +66,14 @@ func New(c Config) *Handler {
 		ReadTimeout:  c.ReadTimeout,
 		WriteTimeout: c.DialTimeout,
 	})
+	if err != nil {
+		return nil, err
+	}
+	err = rh.Ping()
+	if err != nil {
+		return nil, err
+	}
+
 	h.client = rh
-	return h
+	return h, nil
 }
