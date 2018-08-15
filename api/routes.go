@@ -15,5 +15,23 @@ func (handler *Handler) Routes() []*webgo.Route {
 			Pattern:  "/",
 			Handlers: []http.HandlerFunc{handler.Home},
 		},
+		&webgo.Route{
+			Name:     "userSignup",
+			Method:   http.MethodPost,
+			Pattern:  "/signup",
+			Handlers: []http.HandlerFunc{handler.userSignup},
+		},
+		&webgo.Route{
+			Name:     "userLogin",
+			Method:   http.MethodPost,
+			Pattern:  "/login",
+			Handlers: []http.HandlerFunc{handler.userLogin},
+		},
+		&webgo.Route{
+			Name:     "userItems",
+			Method:   http.MethodGet,
+			Pattern:  "/items",
+			Handlers: []http.HandlerFunc{handler.mwareAuthenticate, handler.userItems},
+		},
 	}
 }

@@ -6,6 +6,7 @@ import (
 	"crypto/cipher"
 	"crypto/rand"
 	"errors"
+	"fmt"
 	"io"
 	"strings"
 	"time"
@@ -50,6 +51,10 @@ type Item struct {
 	ModifiedAt *time.Time `json:"modifiedAt,omitempty" bson:"modifiedAt,omitempty"`
 }
 
+func newItemID() string {
+	return fmt.Sprintf("item|%s", uuid.New().String())
+}
+
 // New returns a new instance of Item with the provided data
 func New(data map[string]string, ownerID string) (*Item, error) {
 	ownerID = strings.TrimSpace(ownerID)
@@ -59,7 +64,7 @@ func New(data map[string]string, ownerID string) (*Item, error) {
 
 	now := time.Now()
 	return &Item{
-		ID:          uuid.New().String(),
+		ID:          newItemID(),
 		Title:       strings.TrimSpace(data["title"]),
 		Description: strings.TrimSpace(data["description"]),
 		OwnerID:     ownerID,

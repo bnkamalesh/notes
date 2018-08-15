@@ -14,14 +14,50 @@
   revision = "113d3961e7311526535a1ef7042196563d442761"
 
 [[projects]]
+  name = "github.com/go-redis/cache"
+  packages = [".","internal/lrucache","internal/singleflight"]
+  revision = "c58ada1e23a3b66593f81c70572c20a0bb805a90"
+  version = "v6.3.5"
+
+[[projects]]
+  name = "github.com/go-redis/redis"
+  packages = [".","internal","internal/consistenthash","internal/hashtag","internal/pool","internal/proto","internal/singleflight","internal/util"]
+  revision = "480db94d33e6088e08d628833b6c0705451d24bb"
+  version = "v6.13.2"
+
+[[projects]]
+  name = "github.com/golang/protobuf"
+  packages = ["proto"]
+  revision = "b4deda0973fb4c70b50d226b1af49f3da59f5265"
+  version = "v1.1.0"
+
+[[projects]]
   name = "github.com/google/uuid"
   packages = ["."]
   revision = "064e2069ce9c359c118179501254f67d7d37ba24"
   version = "0.2"
 
+[[projects]]
+  branch = "master"
+  name = "golang.org/x/net"
+  packages = ["context"]
+  revision = "c39426892332e1bb5ec0a434a079bf82f5d30c54"
+
+[[projects]]
+  name = "google.golang.org/appengine"
+  packages = [".","datastore","internal","internal/app_identity","internal/base","internal/datastore","internal/log","internal/modules","internal/remote_api"]
+  revision = "b1f26356af11148e710935ed1ac8a7f5702c7612"
+  version = "v1.1.0"
+
+[[projects]]
+  name = "gopkg.in/vmihailenco/msgpack.v2"
+  packages = [".","codes"]
+  revision = "f4f8982de4ef0de18be76456617cc3f5d8d8141e"
+  version = "v2.9.1"
+
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "10f347692c70e19075984a9158dc7dac2a88a358a8e703fa517bfd3e6063e370"
+  inputs-digest = "e71dac7f8fae5b10b8b82b6433ca5bc8649c6998dc38c2a9a32d2100d57964ba"
   solver-name = "gps-cdcl"
   solver-version = 1

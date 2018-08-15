@@ -8,6 +8,7 @@ import (
 	"crypto/sha512"
 	"encoding/hex"
 	"errors"
+	"fmt"
 	"io"
 	"strings"
 	"time"
@@ -33,7 +34,7 @@ var (
 	// ErrInvPwd is returned if the password is invalid
 	ErrInvPwd = errors.New("Sorry, invalid or no password provided")
 	// ErrUsrNotExists is returned when trying to login with an non-registered email
-	ErrUsrNotExists = errors.New("Sorry, there's no user with that email")
+	ErrUsrNotExists = errors.New("Sorry, there's no user registered with that email")
 	// ErrUsrExists is returned when trying to create a user with the same email
 	ErrUsrExists = errors.New("Sorry, user with that email already exists")
 	// ErrNotAuthenticated is returned when the user is not authenticated and trying to perform
@@ -42,6 +43,10 @@ var (
 	// ErrUnauthorized is returned whenever the user tries to perform an unauthorized action
 	ErrUnauthorized = errors.New("Sorry, you're not authorized to perform this action")
 )
+
+func newUserID() string {
+	return fmt.Sprintf("user|%s", uuid.New().String())
+}
 
 // New returns a user instance based on the provided data
 func New(data map[string]string) (*User, error) {
@@ -56,7 +61,7 @@ func New(data map[string]string) (*User, error) {
 
 	now := time.Now()
 	user := &User{
-		ID:         uuid.New().String(),
+		ID:         newUserID(),
 		Name:       data["name"],
 		Email:      email,
 		Salt:       hashSalt,
@@ -74,7 +79,7 @@ type User struct {
 	Email             string     `json:"email,omitempty" bson:"email,omitempty"`
 	Password          []byte     `json:"-" bson:"password,omitempty"`
 	Salt              string     `json:"-" bson:"salt,omitempty"`
-	authToken         string     `bson:"-"`
+	AuthToken         string     `bson:"-" json:"authToken,omitempty"`
 	encryptedPassword []byte     `bson:"-"`
 	CreatedAt         *time.Time `json:"createdAt,omitempty" bson:"createdAt,omitempty"`
 	ModifiedAt        *time.Time `json:"modifiedAt,omitempty" bson:"modifiedAt,omitempty"`
@@ -92,11 +97,11 @@ func (u *User) ownerID() (string, error) {
 // This function will work only if the user is authenticated and has a valid authToken
 // This is not saved anywhere, and is only used as the key for encryption and decryption of userdata
 func (u *User) passwordStr() (string, error) {
-	if u.authToken == "" {
+	if u.AuthToken == "" {
 		return "", ErrNotAuthenticated
 	}
 
-	key, err := u.encryptionKey(u.authToken, u.Salt)
+	key, err := u.encryptionKey(u.AuthToken, u.Salt)
 	if err != nil {
 		return "", err
 	}
@@ -128,7 +133,7 @@ func (u *User) passwordStr() (string, error) {
 
 // setEncryptedPassword sets the encrypted password in user struct field
 func (u *User) setEncryptedPassword(password string) error {
-	key, err := u.encryptionKey(u.authToken, u.Salt)
+	key, err := u.encryptionKey(u.AuthToken, u.Salt)
 	if err != nil {
 		return err
 	}
@@ -162,8 +167,7 @@ func (u *User) encryptionKey(key, salt string) ([32]byte, error) {
 
 // hash accepts a string and returns a SHA512 hashed string
 func hash(str string, salt string) []byte {
-	hasher.Sum([]byte(str + salt))
-	return hasher.Sum(nil)
+	return hasher.Sum([]byte(str + salt))
 }
 
 // Create creates a new user
@@ -257,7 +261,7 @@ func (s *Service) CreateItem(user *User, data map[string]string) (*items.Item, e
 		return nil, err
 	}
 
-	key, err := user.encryptionKey(pwd, user.authToken)
+	key, err := user.encryptionKey(pwd, user.AuthToken)
 	if err != nil {
 		return nil, err
 	}
@@ -297,7 +301,7 @@ func (s *Service) UpdateItem(user *User, itemID string, data map[string]string) 
 		return nil, err
 	}
 
-	key, err := user.encryptionKey(pwd, user.authToken)
+	key, err := user.encryptionKey(pwd, user.AuthToken)
 	if err != nil {
 		return nil, err
 	}
@@ -360,7 +364,7 @@ func (s *Service) Item(user *User, itemID string) (*items.Item, error) {
 		return nil, err
 	}
 
-	key, err := user.encryptionKey(pwd, user.authToken)
+	key, err := user.encryptionKey(pwd, user.AuthToken)
 	if err != nil {
 		return nil, err
 	}

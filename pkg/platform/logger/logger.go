@@ -4,27 +4,28 @@ package logger
 import (
 	"log"
 	"os"
+	"runtime"
 )
 
 const (
 	// Svr1 defines severity level 1, highest level.
-	Svr1 = severity("Fatal:")
+	Svr1 = severity("Fatal ")
 	// Svr2 defines severity level 2, medium level.
-	Svr2 = severity("Error:")
+	Svr2 = severity("Error ")
 	// Svr3 defines severity level 3, low level.
-	Svr3 = severity("Warning:")
+	Svr3 = severity("Warning ")
 	// Svr4 defines severity level 4, Info.
-	Svr4 = severity("Info:")
+	Svr4 = severity("Info ")
 	// Svr5 defines severity level 5, Debug.
-	Svr5 = severity("Debug:")
+	Svr5 = severity("Debug ")
 )
 
 var (
-	svr1Logger = log.New(os.Stderr, string(Svr1), log.LstdFlags|log.Llongfile)
-	svr2Logger = log.New(os.Stderr, string(Svr2), log.LstdFlags|log.Llongfile)
-	svr3Logger = log.New(os.Stderr, string(Svr3), log.LstdFlags|log.Llongfile)
-	svr4Logger = log.New(os.Stdout, string(Svr4), log.LstdFlags|log.Llongfile)
-	svr5Logger = log.New(os.Stdout, string(Svr5), log.LstdFlags|log.Llongfile)
+	svr1Logger = log.New(os.Stderr, string(Svr1), log.LstdFlags)
+	svr2Logger = log.New(os.Stderr, string(Svr2), log.LstdFlags)
+	svr3Logger = log.New(os.Stderr, string(Svr3), log.LstdFlags)
+	svr4Logger = log.New(os.Stdout, string(Svr4), log.LstdFlags)
+	svr5Logger = log.New(os.Stdout, string(Svr5), log.LstdFlags)
 )
 
 type severity string
@@ -48,25 +49,35 @@ func New() Log {
 
 // Debug prints log of severity 5
 func (l Log) Debug(data ...interface{}) {
+	_, file, lin, _ := runtime.Caller(1)
+	data = append([]interface{}{file, lin}, data...)
 	svr5Logger.Println(data...)
 }
 
 // Info prints logs of severity 4
 func (l Log) Info(data ...interface{}) {
+	_, file, lin, _ := runtime.Caller(1)
+	data = append([]interface{}{file, lin}, data...)
 	svr4Logger.Println(data...)
 }
 
 // Warn prints log of severity 3
 func (l Log) Warn(data ...interface{}) {
+	_, file, lin, _ := runtime.Caller(1)
+	data = append([]interface{}{file, lin}, data...)
 	svr3Logger.Println(data...)
 }
 
 //  Error prints log of severity 2
 func (l Log) Error(data ...interface{}) {
+	_, file, lin, _ := runtime.Caller(1)
+	data = append([]interface{}{file, lin}, data...)
 	svr2Logger.Println(data...)
 }
 
 // Fatal prints log of severity 1
 func (l Log) Fatal(data ...interface{}) {
+	_, file, lin, _ := runtime.Caller(1)
+	data = append([]interface{}{file, lin}, data...)
 	svr1Logger.Println(data...)
 }
