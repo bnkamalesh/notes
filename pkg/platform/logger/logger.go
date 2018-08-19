@@ -40,15 +40,57 @@ type Service interface {
 }
 
 // Log handles all the dependencies for logger
-type Log struct{}
+type Log struct {
+	debugLogs bool
+	infoLogs  bool
+	warnLogs  bool
+	errorLogs bool
+	fataLogs  bool
+}
 
 // New returns an instance of Log with all the dependencies initialized
-func New() Log {
-	return Log{}
+func New(types []string) Log {
+	l := Log{}
+	for _, t := range types {
+		switch t {
+		case "debug":
+			{
+				l.debugLogs = true
+			}
+		case "info":
+			{
+				l.infoLogs = true
+			}
+		case "warn":
+			{
+				l.warnLogs = true
+			}
+		case "error":
+			{
+				l.errorLogs = true
+			}
+		case "fatal":
+			{
+				l.fataLogs = true
+			}
+		case "all", "*":
+			{
+				l.debugLogs = true
+				l.infoLogs = true
+				l.warnLogs = true
+				l.errorLogs = true
+				l.fataLogs = true
+			}
+		}
+	}
+	return l
 }
 
 // Debug prints log of severity 5
 func (l Log) Debug(data ...interface{}) {
+	if !l.debugLogs {
+		return
+	}
 	_, file, lin, _ := runtime.Caller(1)
 	data = append([]interface{}{file, lin}, data...)
 	svr5Logger.Println(data...)
@@ -56,6 +98,9 @@ func (l Log) Debug(data ...interface{}) {
 
 // Info prints logs of severity 4
 func (l Log) Info(data ...interface{}) {
+	if !l.infoLogs {
+		return
+	}
 	_, file, lin, _ := runtime.Caller(1)
 	data = append([]interface{}{file, lin}, data...)
 	svr4Logger.Println(data...)
@@ -63,6 +108,9 @@ func (l Log) Info(data ...interface{}) {
 
 // Warn prints log of severity 3
 func (l Log) Warn(data ...interface{}) {
+	if !l.warnLogs {
+		return
+	}
 	_, file, lin, _ := runtime.Caller(1)
 	data = append([]interface{}{file, lin}, data...)
 	svr3Logger.Println(data...)
@@ -70,6 +118,9 @@ func (l Log) Warn(data ...interface{}) {
 
 //  Error prints log of severity 2
 func (l Log) Error(data ...interface{}) {
+	if !l.errorLogs {
+		return
+	}
 	_, file, lin, _ := runtime.Caller(1)
 	data = append([]interface{}{file, lin}, data...)
 	svr2Logger.Println(data...)
@@ -77,6 +128,9 @@ func (l Log) Error(data ...interface{}) {
 
 // Fatal prints log of severity 1
 func (l Log) Fatal(data ...interface{}) {
+	if !l.fataLogs {
+		return
+	}
 	_, file, lin, _ := runtime.Caller(1)
 	data = append([]interface{}{file, lin}, data...)
 	svr1Logger.Println(data...)

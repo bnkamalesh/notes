@@ -10,6 +10,11 @@ import (
 	"github.com/bnkamalesh/notes/pkg/platform/storage"
 )
 
+// Logs returns which all logs should be enabled
+func Logs() []string {
+	return []string{"all"}
+}
+
 // Webgo returns the configurations required for webgo
 func Webgo() *webgo.Config {
 	return &webgo.Config{

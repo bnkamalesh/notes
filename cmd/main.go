@@ -13,7 +13,7 @@ import (
 )
 
 func main() {
-	logHandler := logger.New()
+	logHandler := logger.New(configs.Logs())
 
 	storageService, err := storage.New(configs.Store())
 	if err != nil {

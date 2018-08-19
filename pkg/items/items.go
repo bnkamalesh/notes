@@ -42,7 +42,7 @@ type Item struct {
 	// Status is the current status of the item, it's set only while returning a deleted item
 	Status string `json:"status,omitempty" bson:"status,omitempty"`
 	// OwnerID is the unique identifier of an owner
-	OwnerID string `json:"ownerID,omitempty" bson:"ownerID,omitempty"`
+	OwnerID string `json:"-" bson:"ownerID,omitempty"`
 	// Blob stores the encrypted byte of Item
 	Blob []byte `json:"-" bson:"blob,omitempty"`
 	// CreatedAt is a UTC timestamp of when the item was created
@@ -52,7 +52,7 @@ type Item struct {
 }
 
 func newItemID() string {
-	return fmt.Sprintf("item|%s", uuid.New().String())
+	return fmt.Sprintf("item_%s", uuid.New().String())
 }
 
 // New returns a new instance of Item with the provided data

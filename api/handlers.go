@@ -26,25 +26,9 @@ func paginationParams(req *http.Request) (int, int) {
 
 // Home is the home page handler
 func (h *Handler) Home(rw http.ResponseWriter, req *http.Request) {
-	webgo.R200(rw, "Hello world")
-}
-
-// userItems returns the items owned by the logged in user
-func (h *Handler) userItems(rw http.ResponseWriter, req *http.Request) {
-	user := getUser(req)
-	if user == nil {
-		webgo.R403(rw, "Unidentified user")
-		return
-	}
-
-	services := h.Services
-	start, limit := paginationParams(req)
-	items, err := services.Users.Items(user, start, limit)
-	if err != nil {
-		webgo.R400(rw, err.Error())
-		return
-	}
-	webgo.R200(rw, items)
+	webgo.R200(rw, map[string]string{
+		"version": "0.5.0",
+	})
 }
 
 func (h *Handler) userSignup(rw http.ResponseWriter, req *http.Request) {
@@ -97,4 +81,105 @@ func (h *Handler) userLogin(rw http.ResponseWriter, req *http.Request) {
 		return
 	}
 	webgo.R200(rw, user)
+}
+
+// userItems returns the items owned by the logged in user
+func (h *Handler) userItems(rw http.ResponseWriter, req *http.Request) {
+	user := getUser(req)
+	if user == nil {
+		webgo.R403(rw, "Unidentified user")
+		return
+	}
+
+	services := h.Services
+	start, limit := paginationParams(req)
+	items, err := services.Users.Items(user, start, limit)
+	if err != nil {
+		webgo.R400(rw, err.Error())
+		return
+	}
+	webgo.R200(rw, items)
+}
+
+// userCreateItem creates a new item for the user
+func (h *Handler) userCreateItem(rw http.ResponseWriter, req *http.Request) {
+	user := getUser(req)
+	if user == nil {
+		webgo.R403(rw, "Unidentified user")
+		return
+	}
+	input := make(map[string]string, 0)
+	err := json.NewDecoder(req.Body).Decode(&input)
+	if err != nil {
+		webgo.R400(rw, err.Error())
+		return
+	}
+	services := h.Services
+	item, err := services.Users.CreateItem(user, input)
+	if err != nil {
+		webgo.R400(rw, err.Error())
+		return
+	}
+	webgo.R200(rw, item)
+}
+
+// userReadItem reads an existing item for the user
+func (h *Handler) userReadItem(rw http.ResponseWriter, req *http.Request) {
+	user := getUser(req)
+	if user == nil {
+		webgo.R403(rw, "Unidentified user")
+		return
+	}
+	wctx := webgo.Context(req)
+	id := wctx.Params["id"]
+	services := h.Services
+	item, err := services.Users.Item(user, id)
+	if err != nil {
+		webgo.R400(rw, err.Error())
+		return
+	}
+	webgo.R200(rw, item)
+}
+
+// userUpdateItem updates an existing item for the user
+func (h *Handler) userUpdateItem(rw http.ResponseWriter, req *http.Request) {
+	user := getUser(req)
+	if user == nil {
+		webgo.R403(rw, "Unidentified user")
+		return
+	}
+	input := make(map[string]string, 0)
+	err := json.NewDecoder(req.Body).Decode(&input)
+	if err != nil {
+		webgo.R400(rw, err.Error())
+		return
+	}
+	wctx := webgo.Context(req)
+	id := wctx.Params["id"]
+	services := h.Services
+	item, err := services.Users.UpdateItem(user, id, input)
+	if err != nil {
+		webgo.R400(rw, err.Error())
+		return
+	}
+	webgo.R200(rw, item)
+}
+
+// userDeleteItem delets an item for the user
+func (h *Handler) userDeleteItem(rw http.ResponseWriter, req *http.Request) {
+	user := getUser(req)
+	if user == nil {
+		webgo.R403(rw, "Unidentified user")
+		return
+	}
+	wctx := webgo.Context(req)
+	id := wctx.Params["id"]
+	services := h.Services
+
+	item, err := services.Users.DeleteItem(user, id)
+	if err != nil {
+		webgo.R400(rw, err.Error())
+		return
+	}
+	webgo.R200(rw, item)
 }

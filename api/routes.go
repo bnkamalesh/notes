@@ -33,5 +33,29 @@ func (handler *Handler) Routes() []*webgo.Route {
 			Pattern:  "/items",
 			Handlers: []http.HandlerFunc{handler.mwareAuthenticate, handler.userItems},
 		},
+		&webgo.Route{
+			Name:     "userCreateItem",
+			Method:   http.MethodPost,
+			Pattern:  "/items",
+			Handlers: []http.HandlerFunc{handler.mwareAuthenticate, handler.userCreateItem},
+		},
+		&webgo.Route{
+			Name:     "userReadItem",
+			Method:   http.MethodGet,
+			Pattern:  "/items/:id",
+			Handlers: []http.HandlerFunc{handler.mwareAuthenticate, handler.userReadItem},
+		},
+		&webgo.Route{
+			Name:     "userUpdateItem",
+			Method:   http.MethodPut,
+			Pattern:  "/items/:id",
+			Handlers: []http.HandlerFunc{handler.mwareAuthenticate, handler.userUpdateItem},
+		},
+		&webgo.Route{
+			Name:     "userDeleteItem",
+			Method:   http.MethodDelete,
+			Pattern:  "/items/:id",
+			Handlers: []http.HandlerFunc{handler.mwareAuthenticate, handler.userDeleteItem},
+		},
 	}
 }

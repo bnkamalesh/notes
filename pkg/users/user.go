@@ -46,7 +46,7 @@ var (
 )
 
 func newUserID() string {
-	return fmt.Sprintf("user|%s", uuid.New().String())
+	return fmt.Sprintf("user_%s", uuid.New().String())
 }
 
 // New returns a user instance based on the provided data
