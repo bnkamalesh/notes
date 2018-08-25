@@ -1,0 +1,56 @@
+version: '3.5'
+
+services:
+  notes_db:
+    image: mongo:3.2
+    container_name: notes_db
+    expose:
+      - 27017
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=<db username>
+      - MONGO_INITDB_ROOT_PASSWORD=<db password>
+    volumes:
+      - ${PWD}/mongodata:/data/db
+    networks:
+      - net_notes_store
+    restart: on-failure:3
+
+  notes_cache:
+    image: redis:alpine
+    container_name: notes_cache
+    command: redis-server /usr/local/etc/redis/redis.conf
+    expose:
+      - 6379
+    volumes:
+      - "${PWD}/master/redis.conf:/usr/local/etc/redis/redis.conf"
+    networks:
+      - net_notes_cache
+    restart: on-failure:3
+
+  notes_app:
+    image: securenotes:latest
+    build: .
+    container_name: notes_app
+    ports:
+      - 8787:8585
+    environment:
+      - notes_app_httpPort=8585
+      - notes_db_name=notes
+      - notes_db_host=notes_db:27017
+      - notes_user=<db username>
+      - notes_db_authsource=<mongodb authentication source>
+      - notes_password=<db password>
+      - notes_cache_host=notes_cache:6379
+    depends_on:
+      - notes_db
+      - notes_cache
+    networks:
+      - net_notes_store
+      - net_notes_cache
+    restart: on-failure:3
+
+networks:
+  net_notes_store:
+    name: net_notes_store
+  net_notes_cache:
+    name: net_notes_cache
