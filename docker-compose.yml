@@ -32,7 +32,7 @@ services:
     build: .
     container_name: notes_app
     ports:
-      - 8787:8585
+      - 7070:7070
     environment:
       - notes_app_httpPort=8585
       - notes_db_name=notes
