@@ -51,12 +51,13 @@ type handlerServices interface {
 
 // Config struct holds all the configurations required for the store
 type Config struct {
-	Name        string
-	Username    string
-	Password    string
-	Hosts       []string
-	DialTimeout time.Duration
-	Timeout     time.Duration
+	Name                 string
+	Username             string
+	Password             string
+	AuthenticationSource string
+	Hosts                []string
+	DialTimeout          time.Duration
+	Timeout              time.Duration
 }
 
 // DocMeta is the document meta generated after performing any store actions
@@ -131,11 +132,12 @@ func (s *Store) Delete(bucket string, query interface{}) error {
 // New returns a new Service instance
 func New(c Config) (Service, error) {
 	mongoHandler, err := mongo.New(mongo.Config{
-		Name:     c.Name,
-		Host:     c.Hosts,
-		Username: c.Username,
-		Password: c.Password,
-		Timeout:  c.Timeout,
+		Name:       c.Name,
+		Host:       c.Hosts,
+		Username:   c.Username,
+		Password:   c.Password,
+		AuthSource: c.AuthenticationSource,
+		Timeout:    c.Timeout,
 	})
 
 	if err != nil {

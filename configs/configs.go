@@ -2,6 +2,7 @@
 package configs
 
 import (
+	"os"
 	"time"
 
 	"github.com/bnkamalesh/webgo"
@@ -19,17 +20,20 @@ func Logs() []string {
 func Webgo() *webgo.Config {
 	return &webgo.Config{
 		Host: "",
-		Port: "8080",
+		Port: os.Getenv("notes_app_httpPort"),
 	}
 }
 
 // Store returns the configuration required for the primary datastore
 func Store() storage.Config {
 	return storage.Config{
-		Name:        "notes",
-		Hosts:       []string{"127.0.0.1:27017"},
-		Timeout:     time.Second * 3,
-		DialTimeout: time.Second * 15,
+		Name:                 os.Getenv("notes_db_name"),
+		Hosts:                []string{os.Getenv("notes_db_host")},
+		Username:             os.Getenv("notes_user"),
+		Password:             os.Getenv("notes_password"),
+		AuthenticationSource: os.Getenv("notes_db_authsource"),
+		Timeout:              time.Second * 3,
+		DialTimeout:          time.Second * 15,
 	}
 }
 
@@ -37,9 +41,9 @@ func Store() storage.Config {
 func Cache() cache.Config {
 	return cache.Config{
 		Name:         "0",
-		Hosts:        []string{"127.0.0.1:6379"},
+		Hosts:        []string{os.Getenv("notes_cache_host")},
 		DialTimeout:  time.Second * 15,
-		ReadTimeout:  time.Second * 3,
-		WriteTimeout: time.Second * 3,
+		ReadTimeout:  time.Millisecond * 25,
+		WriteTimeout: time.Millisecond * 75,
 	}
 }

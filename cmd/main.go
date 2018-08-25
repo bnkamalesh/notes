@@ -15,14 +15,16 @@ import (
 func main() {
 	logHandler := logger.New(configs.Logs())
 
-	storageService, err := storage.New(configs.Store())
+	sc := configs.Store()
+	storageService, err := storage.New(sc)
 	if err != nil {
-		logHandler.Fatal(err.Error())
+		logHandler.Fatal(sc.Hosts, sc.Name, sc.AuthenticationSource, err.Error())
 		return
 	}
-	cacheService, err := cache.New(configs.Cache())
+	cc := configs.Cache()
+	cacheService, err := cache.New(cc)
 	if err != nil {
-		logHandler.Fatal(err.Error())
+		logHandler.Fatal(cc.Hosts, cc.Name, err.Error())
 		return
 	}
 
