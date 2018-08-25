@@ -34,7 +34,7 @@ services:
     ports:
       - 7070:7070
     environment:
-      - notes_app_httpPort=8585
+      - notes_app_httpPort=7070
       - notes_db_name=notes
       - notes_db_host=notes_db:27017
       - notes_user=<db username>
